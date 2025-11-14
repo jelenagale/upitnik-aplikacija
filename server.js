@@ -17,10 +17,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dana
-  }
+  },
+  name: 'upitnik.sid'
 }));
 
 // Middleware
@@ -31,7 +33,11 @@ app.use(express.static('public'));
 // CORS middleware - omogućava pristup s bilo koje domene
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  res.header('Access-Control-Allow-Origin', origin || '*');
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (process.env.NODE_ENV !== 'production') {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -222,47 +228,25 @@ app.get('/api/me', (req, res) => {
   }
 });
 
-// Dohvaćanje server informacija (IP adresa)
-app.get('/api/server-info', (req, res) => {
-  const os = require('os');
-  const networkInterfaces = os.networkInterfaces();
-  let serverIP = null;
-  
-  // Pronađi prvu IPv4 adresu koja nije loopback
-  for (const interfaceName in networkInterfaces) {
-    const interfaces = networkInterfaces[interfaceName];
-    for (const iface of interfaces) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        serverIP = iface.address;
-        break;
-      }
-    }
-    if (serverIP) break;
-  }
-  
-  const protocol = req.protocol || 'http';
-  const host = req.get('host') || `${serverIP || 'localhost'}:${PORT}`;
-  const baseUrl = `${protocol}://${host}`;
-  
-  res.json({
-    serverIP: serverIP,
-    port: PORT,
-    baseUrl: baseUrl,
-    localUrl: `http://localhost:${PORT}`,
-    networkUrl: serverIP ? `http://${serverIP}:${PORT}` : null
-  });
-});
-
 // Kreiranje novog upitnika
-app.post('/api/upitnici', (req, res) => {
+app.post('/api/upitnici', requireAuth, (req, res) => {
   const { naslov, opis, pitanja } = req.body;
+  const korisnikId = req.session.userId;
   const upitnikId = uuidv4();
 
-  console.log('Kreiranje upitnika:', { naslov, pitanjaCount: pitanja?.length, upitnikId });
+  if (!naslov) {
+    return res.status(400).json({ error: 'Naslov je obavezan' });
+  }
+
+  if (!pitanja || pitanja.length === 0) {
+    return res.status(400).json({ error: 'Potrebno je dodati barem jedno pitanje' });
+  }
+
+  console.log('Kreiranje upitnika:', { naslov, pitanjaCount: pitanja?.length, upitnikId, korisnikId });
 
   db.run(
-    'INSERT INTO upitnici (id, naslov, opis) VALUES (?, ?, ?)',
-    [upitnikId, naslov, opis || ''],
+    'INSERT INTO upitnici (id, korisnik_id, naslov, opis) VALUES (?, ?, ?, ?)',
+    [upitnikId, korisnikId, naslov, opis || ''],
     function(err) {
       if (err) {
         console.error('Greška pri spremanju upitnika:', err);
@@ -405,12 +389,22 @@ app.post('/api/upitnici/:id/odgovori', (req, res) => {
   });
 });
 
-// Dohvaćanje rezultata upitnika
-app.get('/api/upitnici/:id/rezultati', (req, res) => {
+// Dohvaćanje rezultata upitnika (samo vlasnik)
+app.get('/api/upitnici/:id/rezultati', requireAuth, (req, res) => {
   const { id } = req.params;
+  const korisnikId = req.session.userId;
 
-  // Dohvaćanje pitanja
-  db.all('SELECT * FROM pitanja WHERE upitnik_id = ? ORDER BY redoslijed', [id], (err, pitanja) => {
+  // Provjeri da li korisnik ima pristup ovom upitniku
+  db.get('SELECT * FROM upitnici WHERE id = ? AND korisnik_id = ?', [id, korisnikId], (err, upitnik) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!upitnik) {
+      return res.status(403).json({ error: 'Nemate pristup ovom upitniku' });
+    }
+
+    // Dohvaćanje pitanja
+    db.all('SELECT * FROM pitanja WHERE upitnik_id = ? ORDER BY redoslijed', [id], (err, pitanja) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -568,12 +562,20 @@ app.get('/upitnik/:id', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'upitnik.html'));
 });
 
-app.get('/rezultati/:id', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'rezultati.html'));
-});
-
-app.get('/test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'test-connection.html'));
+app.get('/rezultati/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const korisnikId = req.session.userId;
+  
+  // Provjeri da li korisnik ima pristup ovom upitniku
+  db.get('SELECT * FROM upitnici WHERE id = ? AND korisnik_id = ?', [id, korisnikId], (err, upitnik) => {
+    if (err) {
+      return res.status(500).send('Greška pri provjeri pristupa');
+    }
+    if (!upitnik) {
+      return res.status(403).send('Nemate pristup ovom upitniku');
+    }
+    res.sendFile(path.join(__dirname, 'public', 'rezultati.html'));
+  });
 });
 
 app.listen(PORT, HOST, () => {

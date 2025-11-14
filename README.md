@@ -4,11 +4,12 @@ Aplikacija za kreiranje i rješavanje upitnika sa mogućnošću exporta rezultat
 
 ## Funkcionalnosti
 
+- ✅ Registracija i login korisnika
 - ✅ Kreiranje upitnika sa različitim tipovima pitanja
 - ✅ Dijeljenje upitnika putem linka
-- ✅ Rješavanje upitnika online
-- ✅ Prikupljanje i prikaz rezultata
-- ✅ Export rezultata u Excel format
+- ✅ Rješavanje upitnika online (bez potrebe za login)
+- ✅ Prikupljanje i prikaz rezultata (samo vlasnik upitnika)
+- ✅ Export rezultata u Excel format (samo vlasnik upitnika)
 
 ## Tipovi pitanja
 
@@ -74,22 +75,27 @@ PORT=8080 HOST=0.0.0.0 npm start
 
 ## Korištenje
 
-1. **Kreiranje upitnika:**
-   - Otvorite aplikaciju u browseru (lokalno ili preko mrežne IP adrese)
+1. **Registracija i Login:**
+   - Prvo se registrirajte ili prijavite na aplikaciju
+   - Možete kreirati novi račun ili se prijaviti sa postojećim
+
+2. **Kreiranje upitnika:**
+   - Nakon login-a, kliknite na "Kreiraj Novi Upitnik"
    - Unesite naslov i opis upitnika
    - Dodajte pitanja (kliknite na "Dodaj Pitanje")
    - Odaberite tip pitanja
    - Za radio/checkbox pitanja, unesite opcije (jedna po liniji)
    - Kliknite "Kreiraj Upitnik"
 
-2. **Dijeljenje upitnika:**
+3. **Dijeljenje upitnika:**
    - Nakon kreiranja, dobit ćete link
    - Kopirajte link i pošaljite ga osobama koje će rješavati upitnik
+   - **Napomena:** Upitnike mogu rješavati svi koji imaju link (bez potrebe za login)
 
-3. **Pregled rezultata:**
-   - Kliknite na "Pregledaj Rezultate" nakon kreiranja upitnika
-   - Ili otvorite `/rezultati/{id-upitnika}`
-   - Kliknite na "Exportuj u Excel" za preuzimanje rezultata
+4. **Pregled rezultata:**
+   - Rezultate može vidjeti samo osoba koja je kreirala upitnik
+   - Kliknite na "Rezultati" u dashboard-u ili otvorite `/rezultati/{id-upitnika}`
+   - Kliknite na "Exportuj u Excel" za preuzimanje rezultata u Excel formatu
 
 ## Struktura projekta
 
@@ -115,46 +121,44 @@ upitnik-aplikacija/
 
 ## API Endpoints
 
-- `POST /api/upitnici` - Kreiranje novog upitnika
-- `GET /api/upitnici` - Lista svih upitnika
-- `GET /api/upitnici/:id` - Dohvaćanje upitnika
-- `POST /api/upitnici/:id/odgovori` - Slanje odgovora
-- `GET /api/upitnici/:id/rezultati` - Dohvaćanje rezultata
-- `GET /api/upitnici/:id/export` - Export rezultata u Excel
+### Autentifikacija
+- `POST /api/register` - Registracija novog korisnika
+- `POST /api/login` - Login korisnika
+- `POST /api/logout` - Logout korisnika
+- `GET /api/me` - Provjera trenutnog korisnika
 
-## 🌐 Deployment za Druge Korisnike
+### Upitnici
+- `POST /api/upitnici` - Kreiranje novog upitnika (zahtijeva autentifikaciju)
+- `GET /api/upitnici` - Lista upitnika trenutnog korisnika (zahtijeva autentifikaciju)
+- `GET /api/upitnici/:id` - Dohvaćanje upitnika (javno dostupno)
+- `POST /api/upitnici/:id/odgovori` - Slanje odgovora (javno dostupno)
+- `GET /api/upitnici/:id/rezultati` - Dohvaćanje rezultata (samo vlasnik)
+- `GET /api/upitnici/:id/export` - Export rezultata u Excel (samo vlasnik)
 
-**Želite da drugi ljudi koriste vašu aplikaciju?**
+## 🌐 Deployment
 
-👉 **Pogledajte [DEPLOY-FOR-USERS.md](./DEPLOY-FOR-USERS.md) - detaljne upute!**
+Aplikacija može biti deploy-ana na bilo koju platformu koja podržava Node.js:
 
-**Brzo rješenje:**
-1. Deploy na **Railway.app** (besplatno, 5 minuta)
-2. Dobijete javni URL (npr. `upitnik-app.railway.app`)
-3. Podijelite URL s korisnicima - gotovo!
+- **Render.com** - Besplatno za početnike, konfigurisan kroz `render.yaml`
+- **Railway.app** - Besplatno sa ograničenjima
+- **Heroku** - Konfigurisan kroz `Procfile`
+- **Bilo koja VPS** - Direktno pokretanje sa `npm start`
 
-👉 **Za tehničke detalje:** [DEPLOY-FREE.md](./DEPLOY-FREE.md)
+### Environment varijable za produkciju:
 
-### Brzi start sa ngrok:
-
-1. Instalirajte ngrok: https://ngrok.com/download
-2. Registrirajte se i dobijte authtoken
-3. Pokrenite:
-   ```bash
-   npm start  # Terminal 1
-   ngrok http 3000  # Terminal 2
-   ```
-4. Koristite javni URL koji ngrok generira!
-
-Ili koristite skriptu:
 ```bash
-./ngrok-setup.sh
+NODE_ENV=production
+PORT=10000
+SESSION_SECRET=your-secret-key-here
 ```
+
+**Napomena:** Obavezno postavite `SESSION_SECRET` na siguran nasumični string u produkciji!
 
 ## Napomene
 
 - Baza podataka se kreira automatski pri prvom pokretanju
-- Svi upitnici su javno dostupni preko linka (nema autentifikacije)
+- Upitnici se mogu rješavati bez login-a (javno dostupni preko linka)
+- Rezultate može vidjeti samo vlasnik upitnika
 - Rezultati se grupiraju po sesijama (svako ispunjavanje = jedna sesija)
-- Za javni pristup, razmotrite deployment na cloud platformu (Render, Railway, itd.)
+- Export u Excel je dostupan samo vlasniku upitnika
 

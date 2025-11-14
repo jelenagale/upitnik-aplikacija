@@ -44,8 +44,15 @@
         const upitnikId = window.location.pathname.split('/')[2];
         
         // Učitavanje rezultata
-        fetch(`/api/upitnici/${upitnikId}/rezultati`)
-            .then(res => res.json())
+        fetch(`/api/upitnici/${upitnikId}/rezultati`, { credentials: 'include' })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => {
+                        throw new Error(err.error || 'Greška pri učitavanju rezultata');
+                    });
+                }
+                return res.json();
+            })
             .then(data => {
                 document.getElementById('loading').style.display = 'none';
                 
@@ -87,8 +94,26 @@
                 document.getElementById('greskaPoruka').textContent = 'Došlo je do greške pri učitavanju rezultata.';
             });
 
-        function exportujExcel() {
-            window.location.href = `/api/upitnici/${upitnikId}/export`;
+        async function exportujExcel() {
+            try {
+                const response = await fetch(`/api/upitnici/${upitnikId}/export`, { credentials: 'include' });
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.error || 'Greška pri exportu');
+                    return;
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rezultati_${upitnikId}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Greška pri exportu u Excel: ' + error.message);
+            }
         }
     </script>
 </body>
