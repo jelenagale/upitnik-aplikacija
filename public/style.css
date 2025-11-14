@@ -5,142 +5,190 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f5f5;
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
     color: #333;
+    line-height: 1.6;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+    min-height: 100vh;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
+/* Header - SurveyMonkey style */
 header {
-    text-align: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #f0f0f0;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 24px 40px;
+    margin-bottom: 0;
 }
 
 header h1 {
-    color: #667eea;
-    margin-bottom: 10px;
-    font-size: 2em;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
 }
 
 header p {
     color: #666;
-    font-size: 1.1em;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+/* Form styling */
+form {
+    padding: 40px;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #333;
+    font-weight: 500;
+    color: #1a1a1a;
+    font-size: 14px;
 }
 
 .form-group input[type="text"],
 .form-group textarea,
 .form-group select {
     width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 16px;
-    transition: border-color 0.3s;
+    padding: 12px 16px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: inherit;
+    background: #ffffff;
 }
 
 .form-group input[type="text"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #00bf6f;
+    box-shadow: 0 0 0 3px rgba(0, 191, 111, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Question items */
+.pitanja-container {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.pitanja-container h2 {
+    color: #1a1a1a;
+    margin-bottom: 24px;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 .pitanje-item {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 2px solid #e0e0e0;
+    background: #fafafa;
+    padding: 24px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e5e5;
 }
 
 .pitanje-item h3 {
-    color: #667eea;
-    margin-bottom: 15px;
-    font-size: 1.1em;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .pitanje-item .remove-btn {
     background: #dc3545;
     color: white;
     border: none;
-    padding: 8px 15px;
-    border-radius: 5px;
+    padding: 8px 16px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    margin-top: 10px;
+    font-size: 13px;
+    margin-top: 12px;
+    font-weight: 500;
+    transition: background 0.2s;
 }
 
 .pitanje-item .remove-btn:hover {
     background: #c82333;
 }
 
+/* Options */
 .option-label {
-    display: block;
-    margin: 8px 0;
-    padding: 8px;
+    display: flex;
+    align-items: center;
+    margin: 12px 0;
+    padding: 12px;
     cursor: pointer;
     border-radius: 4px;
     transition: background 0.2s;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
 }
 
 .option-label:hover {
-    background: #f0f0f0;
+    background: #f5f5f5;
 }
 
 .option-label input {
-    margin-right: 8px;
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
 
+/* Buttons - SurveyMonkey style */
 .btn {
     padding: 12px 24px;
     border: none;
-    border-radius: 6px;
-    font-size: 16px;
+    border-radius: 4px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s;
     text-decoration: none;
     display: inline-block;
     text-align: center;
+    font-family: inherit;
 }
 
 .btn-primary {
-    background: #667eea;
-    color: white;
+    background: #00bf6f;
+    color: #ffffff;
 }
 
 .btn-primary:hover {
-    background: #5568d3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: #00a862;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 191, 111, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 .btn-secondary {
     background: #6c757d;
-    color: white;
+    color: #ffffff;
 }
 
 .btn-secondary:hover {
@@ -148,147 +196,261 @@ header p {
 }
 
 .btn-success {
-    background: #28a745;
-    color: white;
+    background: #00bf6f;
+    color: #ffffff;
 }
 
 .btn-success:hover {
-    background: #218838;
+    background: #00a862;
 }
 
 .form-actions {
-    margin-top: 30px;
-    text-align: center;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e5e5;
+    text-align: left;
 }
 
-.pitanja-container {
-    margin-top: 30px;
-    padding-top: 30px;
-    border-top: 2px solid #f0f0f0;
-}
-
-.pitanja-container h2 {
-    color: #667eea;
-    margin-bottom: 20px;
-}
-
+/* Result container */
 .rezultat-container {
-    margin-top: 30px;
-    padding: 30px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    padding: 40px;
+    background: #ffffff;
     text-align: center;
 }
 
 .rezultat-container h2 {
-    color: #28a745;
-    margin-bottom: 20px;
+    color: #00bf6f;
+    margin-bottom: 16px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.rezultat-container p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 24px;
 }
 
 .link-container {
     display: flex;
-    gap: 10px;
-    margin: 20px 0;
+    gap: 12px;
+    margin: 24px 0;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .link-container input {
     flex: 1;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
     font-size: 14px;
+    background: #fafafa;
+    font-family: 'Courier New', monospace;
 }
 
 .action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     justify-content: center;
-    margin-top: 20px;
+    margin-top: 24px;
+    flex-wrap: wrap;
 }
 
+/* Loading */
 .loading {
     text-align: center;
-    padding: 40px;
-    font-size: 1.2em;
-    color: #667eea;
+    padding: 80px 40px;
+    font-size: 16px;
+    color: #666;
 }
 
+/* Error container */
 .error-container {
-    background: #f8d7da;
-    color: #721c24;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    background: #fff5f5;
+    color: #c53030;
+    padding: 24px;
+    border-radius: 4px;
+    border: 1px solid #fed7d7;
     text-align: center;
+    margin: 40px;
 }
 
+.error-container h2 {
+    margin-bottom: 8px;
+    font-size: 20px;
+}
+
+/* Info message */
 .info-message {
     text-align: center;
-    padding: 40px;
+    padding: 80px 40px;
     color: #666;
-    font-size: 1.1em;
+    font-size: 16px;
 }
 
+/* Action bar */
 .action-bar {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    justify-content: flex-start;
+    padding: 0 40px;
+    padding-top: 24px;
 }
 
+/* Table */
 .table-container {
     overflow-x: auto;
-    margin-top: 20px;
+    margin: 24px 40px;
+    background: #ffffff;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
 }
 
 .results-table {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .results-table thead {
-    background: #667eea;
-    color: white;
+    background: #fafafa;
+    border-bottom: 2px solid #e5e5e5;
 }
 
 .results-table th {
-    padding: 15px;
+    padding: 16px;
     text-align: left;
     font-weight: 600;
+    font-size: 13px;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .results-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    color: #333;
 }
 
 .results-table tbody tr:hover {
-    background: #f8f9fa;
+    background: #fafafa;
 }
 
 .results-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-@media (max-width: 600px) {
+/* Survey page specific */
+#upitnikContainer {
+    padding: 40px;
+}
+
+#upitnikContainer header {
+    padding: 0;
+    border: none;
+    margin-bottom: 32px;
+}
+
+#upitnikContainer header h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+}
+
+#upitnikContainer header p {
+    font-size: 16px;
+    color: #666;
+}
+
+#pitanjaContainer .form-group {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+#pitanjaContainer .form-group:last-child {
+    border-bottom: none;
+}
+
+#pitanjaContainer .form-group label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+    display: block;
+}
+
+#pitanjaContainer input[type="text"],
+#pitanjaContainer textarea {
+    font-size: 16px;
+    padding: 14px 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
     .container {
-        padding: 20px;
+        max-width: 100%;
+    }
+
+    header {
+        padding: 20px 24px;
+    }
+
+    header h1 {
+        font-size: 24px;
+    }
+
+    form,
+    .rezultat-container,
+    #upitnikContainer {
+        padding: 24px;
     }
 
     .action-bar {
+        padding: 20px 24px;
         flex-direction: column;
     }
 
     .action-buttons {
         flex-direction: column;
+        width: 100%;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
     }
 
     .link-container {
         flex-direction: column;
     }
+
+    .table-container {
+        margin: 16px;
+    }
+
+    .pitanje-item {
+        padding: 20px;
+    }
 }
 
+/* Success message */
+#uspjeh {
+    padding: 60px 40px;
+    text-align: center;
+}
+
+#uspjeh h2 {
+    color: #00bf6f;
+    font-size: 28px;
+    margin-bottom: 16px;
+}
+
+#uspjeh p {
+    color: #666;
+    font-size: 16px;
+}
