@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rezultati Upitnika</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Rezultati Upitnika</h1>
+        </header>
+
+        <div id="loading" class="loading">
+            <p>Učitavanje rezultata...</p>
+        </div>
+
+        <div id="rezultatiContainer" style="display: none;">
+            <div class="action-bar">
+                <button class="btn btn-success" onclick="exportujExcel()">📥 Exportuj u Excel</button>
+                <a href="/" class="btn btn-secondary">← Nazad</a>
+            </div>
+
+            <div class="table-container">
+                <table id="rezultatiTable" class="results-table">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div id="nemaRezultata" class="info-message" style="display: none;">
+                <p>Još nema rezultata za ovaj upitnik.</p>
+            </div>
+        </div>
+
+        <div id="greska" class="error-container" style="display: none;">
+            <h2>❌ Greška</h2>
+            <p id="greskaPoruka"></p>
+        </div>
+    </div>
+
+    <script>
+        const upitnikId = window.location.pathname.split('/')[2];
+        
+        // Učitavanje rezultata
+        fetch(`/api/upitnici/${upitnikId}/rezultati`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.rezultati.length === 0) {
+                    document.getElementById('nemaRezultata').style.display = 'block';
+                    document.getElementById('rezultatiContainer').style.display = 'block';
+                    return;
+                }
+
+                // Kreiranje tablice
+                const tableHead = document.getElementById('tableHead');
+                const tableBody = document.getElementById('tableBody');
+
+                // Header
+                const headerRow = document.createElement('tr');
+                Object.keys(data.rezultati[0]).forEach(key => {
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    headerRow.appendChild(th);
+                });
+                tableHead.appendChild(headerRow);
+
+                // Rows
+                data.rezultati.forEach(red => {
+                    const tr = document.createElement('tr');
+                    Object.values(red).forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = value;
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+
+                document.getElementById('rezultatiContainer').style.display = 'block';
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('greska').style.display = 'block';
+                document.getElementById('greskaPoruka').textContent = 'Došlo je do greške pri učitavanju rezultata.';
+            });
+
+        function exportujExcel() {
+            window.location.href = `/api/upitnici/${upitnikId}/export`;
+        }
+    </script>
+</body>
+</html>
+

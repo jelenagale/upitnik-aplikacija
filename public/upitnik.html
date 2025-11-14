@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upitnik</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading">
+            <p>Učitavanje upitnika...</p>
+        </div>
+
+        <div id="upitnikContainer" style="display: none;">
+            <header>
+                <h1 id="upitnikNaslov"></h1>
+                <p id="upitnikOpis"></p>
+            </header>
+
+            <form id="odgovoriForm">
+                <div id="pitanjaContainer"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Pošalji Odgovore</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="uspjeh" class="rezultat-container" style="display: none;">
+            <h2>✅ Hvala vam!</h2>
+            <p>Vaši odgovori su uspješno spremljeni.</p>
+        </div>
+
+        <div id="greska" class="error-container" style="display: none;">
+            <h2>❌ Greška</h2>
+            <p id="greskaPoruka"></p>
+        </div>
+    </div>
+
+    <script>
+        const upitnikId = window.location.pathname.split('/')[2];
+        
+        // Učitavanje upitnika
+        fetch(`/api/upitnici/${upitnikId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('upitnikContainer').style.display = 'block';
+                
+                document.getElementById('upitnikNaslov').textContent = data.naslov;
+                if (data.opis) {
+                    document.getElementById('upitnikOpis').textContent = data.opis;
+                } else {
+                    document.getElementById('upitnikOpis').style.display = 'none';
+                }
+
+                const pitanjaContainer = document.getElementById('pitanjaContainer');
+                data.pitanja.forEach((pitanje, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = `${index + 1}. ${pitanje.tekst}`;
+                    if (pitanje.tip === 'checkbox' || pitanje.tip === 'radio') {
+                        label.style.display = 'block';
+                        label.style.marginBottom = '10px';
+                    }
+                    div.appendChild(label);
+
+                    if (pitanje.tip === 'text' || pitanje.tip === 'textarea') {
+                        const input = document.createElement(pitanje.tip === 'textarea' ? 'textarea' : 'input');
+                        input.type = pitanje.tip === 'textarea' ? 'textarea' : 'text';
+                        input.name = pitanje.id;
+                        input.required = true;
+                        if (pitanje.tip === 'textarea') {
+                            input.rows = 4;
+                        }
+                        div.appendChild(input);
+                    } else if (pitanje.tip === 'radio' || pitanje.tip === 'checkbox') {
+                        const opcije = JSON.parse(pitanje.opcije || '[]');
+                        opcije.forEach(opcija => {
+                            const labelOpcija = document.createElement('label');
+                            labelOpcija.className = 'option-label';
+                            
+                            const input = document.createElement('input');
+                            input.type = pitanje.tip;
+                            input.name = pitanje.id;
+                            input.value = opcija;
+                            if (pitanje.tip === 'radio') {
+                                input.required = true;
+                            }
+                            
+                            labelOpcija.appendChild(input);
+                            labelOpcija.appendChild(document.createTextNode(' ' + opcija));
+                            div.appendChild(labelOpcija);
+                        });
+                    }
+
+                    pitanjaContainer.appendChild(div);
+                });
+
+                // Slanje odgovora
+                document.getElementById('odgovoriForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const odgovori = [];
+
+                    data.pitanja.forEach(pitanje => {
+                        if (pitanje.tip === 'checkbox') {
+                            const values = formData.getAll(pitanje.id);
+                            odgovori.push({
+                                pitanje_id: pitanje.id,
+                                odgovor: values
+                            });
+                        } else {
+                            odgovori.push({
+                                pitanje_id: pitanje.id,
+                                odgovor: formData.get(pitanje.id)
+                            });
+                        }
+                    });
+
+                    fetch(`/api/upitnici/${upitnikId}/odgovori`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ odgovori })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('upitnikContainer').style.display = 'none';
+                        document.getElementById('uspjeh').style.display = 'block';
+                    })
+                    .catch(err => {
+                        document.getElementById('upitnikContainer').style.display = 'none';
+                        document.getElementById('greska').style.display = 'block';
+                        document.getElementById('greskaPoruka').textContent = 'Došlo je do greške pri slanju odgovora.';
+                    });
+                });
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('greska').style.display = 'block';
+                document.getElementById('greskaPoruka').textContent = 'Upitnik nije pronađen.';
+            });
+    </script>
+</body>
+</html>
+
