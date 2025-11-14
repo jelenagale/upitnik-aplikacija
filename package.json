@@ -21,7 +21,9 @@
     "sqlite3": "^5.1.6",
     "xlsx": "^0.18.5",
     "uuid": "^9.0.0",
-    "body-parser": "^1.20.2"
+    "body-parser": "^1.20.2",
+    "express-session": "^1.17.3",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

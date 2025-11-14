@@ -4,10 +4,24 @@ const sqlite3 = require('sqlite3').verbose();
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const XLSX = require('xlsx');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // Sluša na svim mrežnim interfejsima
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'upitnik-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dana
+  }
+}));
 
 // Middleware
 app.use(bodyParser.json());
@@ -27,13 +41,24 @@ const db = new sqlite3.Database('upitnici.db');
 
 // Kreiranje tablica
 db.serialize(() => {
+  // Tablica za korisnike
+  db.run(`CREATE TABLE IF NOT EXISTS korisnici (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    lozinka TEXT NOT NULL,
+    ime TEXT,
+    kreiran_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Tablica za upitnike
   db.run(`CREATE TABLE IF NOT EXISTS upitnici (
     id TEXT PRIMARY KEY,
+    korisnik_id TEXT,
     naslov TEXT NOT NULL,
     opis TEXT,
     kreiran_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    aktiviran INTEGER DEFAULT 1
+    aktiviran INTEGER DEFAULT 1,
+    FOREIGN KEY (korisnik_id) REFERENCES korisnici(id)
   )`);
 
   // Tablica za pitanja
@@ -68,7 +93,129 @@ db.serialize(() => {
   )`);
 });
 
+// Middleware za provjeru autentifikacije
+const requireAuth = (req, res, next) => {
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Potrebna autentifikacija' });
+};
+
 // API Rute
+
+// Registracija
+app.post('/api/register', async (req, res) => {
+  const { email, lozinka, ime } = req.body;
+
+  if (!email || !lozinka) {
+    return res.status(400).json({ error: 'Email i lozinka su obavezni' });
+  }
+
+  // Provjeri da li korisnik već postoji
+  db.get('SELECT * FROM korisnici WHERE email = ?', [email], async (err, korisnik) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (korisnik) {
+      return res.status(400).json({ error: 'Email već postoji' });
+    }
+
+    // Hash lozinke
+    const hashedLozinka = await bcrypt.hash(lozinka, 10);
+    const korisnikId = uuidv4();
+
+    // Kreiraj korisnika
+    db.run(
+      'INSERT INTO korisnici (id, email, lozinka, ime) VALUES (?, ?, ?, ?)',
+      [korisnikId, email, hashedLozinka, ime || null],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Automatski login
+        req.session.userId = korisnikId;
+        req.session.userEmail = email;
+        req.session.userName = ime || email;
+
+        res.json({
+          success: true,
+          message: 'Registracija uspješna',
+          user: {
+            id: korisnikId,
+            email: email,
+            ime: ime || email
+          }
+        });
+      }
+    );
+  });
+});
+
+// Login
+app.post('/api/login', (req, res) => {
+  const { email, lozinka } = req.body;
+
+  if (!email || !lozinka) {
+    return res.status(400).json({ error: 'Email i lozinka su obavezni' });
+  }
+
+  db.get('SELECT * FROM korisnici WHERE email = ?', [email], async (err, korisnik) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!korisnik) {
+      return res.status(401).json({ error: 'Neispravan email ili lozinka' });
+    }
+
+    // Provjeri lozinku
+    const isValid = await bcrypt.compare(lozinka, korisnik.lozinka);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Neispravan email ili lozinka' });
+    }
+
+    // Postavi session
+    req.session.userId = korisnik.id;
+    req.session.userEmail = korisnik.email;
+    req.session.userName = korisnik.ime || korisnik.email;
+
+    res.json({
+      success: true,
+      message: 'Login uspješan',
+      user: {
+        id: korisnik.id,
+        email: korisnik.email,
+        ime: korisnik.ime || korisnik.email
+      }
+    });
+  });
+});
+
+// Logout
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Greška pri logout-u' });
+    }
+    res.json({ success: true, message: 'Logout uspješan' });
+  });
+});
+
+// Provjera trenutnog korisnika
+app.get('/api/me', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.session.userId,
+        email: req.session.userEmail,
+        ime: req.session.userName
+      }
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
 
 // Dohvaćanje server informacija (IP adresa)
 app.get('/api/server-info', (req, res) => {
@@ -212,9 +359,10 @@ app.get('/api/upitnici/:id', (req, res) => {
   });
 });
 
-// Lista svih upitnika
-app.get('/api/upitnici', (req, res) => {
-  db.all('SELECT * FROM upitnici ORDER BY kreiran_at DESC', (err, upitnici) => {
+// Lista upitnika korisnika (samo ulogirani korisnici)
+app.get('/api/upitnici', requireAuth, (req, res) => {
+  const korisnikId = req.session.userId;
+  db.all('SELECT * FROM upitnici WHERE korisnik_id = ? ORDER BY kreiran_at DESC', [korisnikId], (err, upitnici) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -307,14 +455,18 @@ app.get('/api/upitnici/:id/rezultati', (req, res) => {
   });
 });
 
-// Export u Excel
-app.get('/api/upitnici/:id/export', (req, res) => {
+// Export u Excel (samo vlasnik)
+app.get('/api/upitnici/:id/export', requireAuth, (req, res) => {
   const { id } = req.params;
+  const korisnikId = req.session.userId;
 
-  // Dohvaćanje upitnika
-  db.get('SELECT * FROM upitnici WHERE id = ?', [id], (err, upitnik) => {
+  // Dohvaćanje upitnika i provjera vlasništva
+  db.get('SELECT * FROM upitnici WHERE id = ? AND korisnik_id = ?', [id, korisnikId], (err, upitnik) => {
     if (err) {
       return res.status(500).json({ error: err.message });
+    }
+    if (!upitnik) {
+      return res.status(403).json({ error: 'Nemate pristup ovom upitniku' });
     }
 
     // Dohvaćanje pitanja
@@ -378,6 +530,32 @@ app.get('/api/upitnici/:id/export', (req, res) => {
 
 // Frontend rute
 app.get('/', (req, res) => {
+  // Ako je korisnik ulogiran, preusmjeri na dashboard
+  if (req.session && req.session.userId) {
+    return res.redirect('/dashboard');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
+app.get('/kreiraj', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

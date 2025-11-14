@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Moji Upitnici</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Moji Upitnici</h1>
+                    <p id="userInfo">Učitavanje...</p>
+                </div>
+                <div>
+                    <a href="/" class="btn btn-secondary" onclick="logout()" style="text-decoration: none;">Odjavi se</a>
+                </div>
+            </div>
+        </header>
+
+        <div style="padding: 40px;">
+            <div style="margin-bottom: 30px;">
+                <a href="/kreiraj" class="btn btn-primary" style="text-decoration: none;">+ Kreiraj Novi Upitnik</a>
+            </div>
+
+            <div id="loading" class="loading">
+                <p>Učitavanje upitnika...</p>
+            </div>
+
+            <div id="upitniciLista" style="display: none;">
+                <h2 style="margin-bottom: 20px; font-size: 20px; font-weight: 600;">Vaši upitnici</h2>
+                <div id="upitniciContainer"></div>
+                <div id="nemaUpitnika" style="display: none; text-align: center; padding: 60px; color: #666;">
+                    <p style="font-size: 16px;">Nemate još kreiranih upitnika.</p>
+                    <a href="/kreiraj" class="btn btn-primary" style="margin-top: 20px; text-decoration: none; display: inline-block;">Kreiraj Prvi Upitnik</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Provjeri autentifikaciju
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me', { credentials: 'include' });
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/';
+                    return;
+                }
+                
+                document.getElementById('userInfo').textContent = `Pozdrav, ${data.user.ime || data.user.email}!`;
+                loadUpitnici();
+            } catch (error) {
+                console.error('Greška:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Učitaj upitnike
+        async function loadUpitnici() {
+            try {
+                const response = await fetch('/api/upitnici', { credentials: 'include' });
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('upitniciLista').style.display = 'block';
+                
+                if (data.length === 0) {
+                    document.getElementById('nemaUpitnika').style.display = 'block';
+                    return;
+                }
+                
+                const container = document.getElementById('upitniciContainer');
+                container.innerHTML = '';
+                
+                data.forEach(upitnik => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'background: #fafafa; padding: 24px; border-radius: 4px; margin-bottom: 16px; border: 1px solid #e5e5e5;';
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">${upitnik.naslov}</h3>
+                                ${upitnik.opis ? `<p style="margin: 0 0 12px 0; color: #666; font-size: 14px;">${upitnik.opis}</p>` : ''}
+                                <p style="margin: 0; color: #999; font-size: 12px;">Kreiran: ${new Date(upitnik.kreiran_at).toLocaleString('hr-HR')}</p>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-direction: column;">
+                                <a href="/upitnik/${upitnik.id}" target="_blank" class="btn btn-secondary" style="text-decoration: none; font-size: 13px; padding: 8px 16px;">Pregledaj</a>
+                                <a href="/rezultati/${upitnik.id}" target="_blank" class="btn btn-secondary" style="text-decoration: none; font-size: 13px; padding: 8px 16px;">Rezultati</a>
+                                <button onclick="exportExcel('${upitnik.id}', '${upitnik.naslov}')" class="btn btn-success" style="font-size: 13px; padding: 8px 16px;">Excel</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Greška pri učitavanju upitnika:', error);
+                document.getElementById('loading').style.display = 'none';
+                alert('Greška pri učitavanju upitnika');
+            }
+        }
+
+        // Export Excel
+        async function exportExcel(upitnikId, naslov) {
+            try {
+                const response = await fetch(`/api/upitnici/${upitnikId}/export`, { credentials: 'include' });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.error || 'Greška pri exportu');
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${naslov.replace(/[^a-z0-9]/gi, '_')}_rezultati.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Greška:', error);
+                alert('Greška pri exportu u Excel');
+            }
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Greška:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Provjeri autentifikaciju pri učitavanju
+        checkAuth();
+    </script>
+</body>
+</html>
+

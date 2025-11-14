@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Upitnik Aplikacija</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Prijavite se</h1>
+            <p>Pristupite svojim upitnicima</p>
+        </header>
+
+        <form id="loginForm" style="max-width: 400px; margin: 0 auto;">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required placeholder="vas@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="lozinka">Lozinka:</label>
+                <input type="password" id="lozinka" name="lozinka" required placeholder="Unesite lozinku">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Prijavi se</button>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <p style="color: #666; font-size: 14px;">
+                    Nemate account? <a href="/register" style="color: #00bf6f; text-decoration: none;">Registrirajte se</a>
+                </p>
+            </div>
+        </form>
+
+        <div id="greska" class="error-container" style="display: none; max-width: 400px; margin: 20px auto;">
+            <p id="greskaPoruka"></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const lozinka = document.getElementById('lozinka').value;
+            const greskaDiv = document.getElementById('greska');
+            const greskaPoruka = document.getElementById('greskaPoruka');
+
+            greskaDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, lozinka })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    greskaPoruka.textContent = data.error || 'Greška pri prijavi';
+                    greskaDiv.style.display = 'block';
+                }
+            } catch (error) {
+                greskaPoruka.textContent = 'Greška pri prijavi: ' + error.message;
+                greskaDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
+

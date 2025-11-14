@@ -1,5 +1,24 @@
 let pitanjeCounter = 0;
 
+// Provjeri autentifikaciju
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/me', { credentials: 'include' });
+        const data = await response.json();
+        if (!data.authenticated) {
+            window.location.href = '/';
+        }
+    } catch (error) {
+        window.location.href = '/';
+    }
+}
+
+// Provjeri pri učitavanju
+window.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    dodajPitanje();
+});
+
 function dodajPitanje() {
     pitanjeCounter++;
     const pitanjaLista = document.getElementById('pitanjaLista');
@@ -92,6 +111,7 @@ document.getElementById('upitnikForm').addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 naslov,
                 opis,
@@ -111,6 +131,15 @@ document.getElementById('upitnikForm').addEventListener('submit', async (e) => {
             document.getElementById('linkInput').value = link;
             document.getElementById('pregledLink').href = link;
             document.getElementById('rezultatiLink').href = rezultatiLink;
+            
+            // Dodaj link za povratak na dashboard
+            const actionButtons = document.getElementById('rezultat').querySelector('.action-buttons');
+            const dashboardLink = document.createElement('a');
+            dashboardLink.href = '/dashboard';
+            dashboardLink.className = 'btn btn-secondary';
+            dashboardLink.textContent = 'Nazad na Dashboard';
+            dashboardLink.style.textDecoration = 'none';
+            actionButtons.appendChild(dashboardLink);
         } else {
             alert('Greška pri kreiranju upitnika: ' + (data.error || 'Nepoznata greška'));
         }
@@ -139,8 +168,4 @@ function kopirajLink() {
     });
 }
 
-// Dodaj prvo pitanje automatski
-window.addEventListener('DOMContentLoaded', () => {
-    dodajPitanje();
-});
 
