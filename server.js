@@ -106,13 +106,18 @@ app.post('/api/upitnici', (req, res) => {
   const { naslov, opis, pitanja } = req.body;
   const upitnikId = uuidv4();
 
+  console.log('Kreiranje upitnika:', { naslov, pitanjaCount: pitanja?.length, upitnikId });
+
   db.run(
     'INSERT INTO upitnici (id, naslov, opis) VALUES (?, ?, ?)',
     [upitnikId, naslov, opis || ''],
     function(err) {
       if (err) {
+        console.error('Greška pri spremanju upitnika:', err);
         return res.status(500).json({ error: err.message });
       }
+
+      console.log('Upitnik spremljen, ID:', upitnikId, 'Row ID:', this.lastID);
 
       // Dodavanje pitanja
       const stmt = db.prepare('INSERT INTO pitanja (id, upitnik_id, tekst, tip, redoslijed, opcije) VALUES (?, ?, ?, ?, ?, ?)');
@@ -121,17 +126,22 @@ app.post('/api/upitnici', (req, res) => {
         const pitanjeId = uuidv4();
         const opcijeJson = pitanje.opcije ? JSON.stringify(pitanje.opcije) : null;
         stmt.run(pitanjeId, upitnikId, pitanje.tekst, pitanje.tip, index, opcijeJson);
+        console.log('Pitanje dodano:', { pitanjeId, tekst: pitanje.tekst, tip: pitanje.tip });
       });
       
       stmt.finalize((err) => {
         if (err) {
+          console.error('Greška pri spremanju pitanja:', err);
           return res.status(500).json({ error: err.message });
         }
-        // Generiraj puni link sa server IP adresom
-        const protocol = req.protocol || 'http';
-        const host = req.get('host') || `localhost:${PORT}`;
+        
+        // Generiraj puni link - koristi X-Forwarded-Proto za HTTPS na Railway/Render
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
         const baseUrl = `${protocol}://${host}`;
         const link = `${baseUrl}/upitnik/${upitnikId}`;
+        
+        console.log('Upitnik kreiran uspješno:', { upitnikId, link });
         
         res.json({ 
           id: upitnikId, 
@@ -146,14 +156,26 @@ app.post('/api/upitnici', (req, res) => {
 // Dohvaćanje upitnika
 app.get('/api/upitnici/:id', (req, res) => {
   const { id } = req.params;
+  
+  console.log('Traženje upitnika sa ID:', id);
 
   db.get('SELECT * FROM upitnici WHERE id = ?', [id], (err, upitnik) => {
     if (err) {
+      console.error('Greška pri dohvaćanju upitnika:', err);
       return res.status(500).json({ error: err.message });
     }
     if (!upitnik) {
+      console.log('Upitnik nije pronađen sa ID:', id);
+      // Provjeri da li uopće postoje upitnici
+      db.all('SELECT id FROM upitnici LIMIT 5', (err, allUpitnici) => {
+        if (!err) {
+          console.log('Dostupni upitnici:', allUpitnici.map(u => u.id));
+        }
+      });
       return res.status(404).json({ error: 'Upitnik nije pronađen' });
     }
+    
+    console.log('Upitnik pronađen:', upitnik.naslov);
 
     db.all('SELECT * FROM pitanja WHERE upitnik_id = ? ORDER BY redoslijed', [id], (err, pitanja) => {
       if (err) {

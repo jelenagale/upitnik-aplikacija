@@ -122,13 +122,18 @@ upitnik-aplikacija/
 - `GET /api/upitnici/:id/rezultati` - Dohvaćanje rezultata
 - `GET /api/upitnici/:id/export` - Export rezultata u Excel
 
-## 🌐 Besplatni Deployment (Javni Pristup)
+## 🌐 Deployment za Druge Korisnike
 
-**Želite da aplikacija bude dostupna s bilo koje mreže?** 
+**Želite da drugi ljudi koriste vašu aplikaciju?**
 
-👉 **Pogledajte [DEPLOY-FREE.md](./DEPLOY-FREE.md) za korak-po-korak vodič!**
+👉 **Pogledajte [DEPLOY-FOR-USERS.md](./DEPLOY-FOR-USERS.md) - detaljne upute!**
 
-Najlakše rješenje: **Railway.app** (besplatno, 5 minuta setup)
+**Brzo rješenje:**
+1. Deploy na **Railway.app** (besplatno, 5 minuta)
+2. Dobijete javni URL (npr. `upitnik-app.railway.app`)
+3. Podijelite URL s korisnicima - gotovo!
+
+👉 **Za tehničke detalje:** [DEPLOY-FREE.md](./DEPLOY-FREE.md)
 
 ### Brzi start sa ngrok:
 

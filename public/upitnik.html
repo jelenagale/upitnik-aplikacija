@@ -38,12 +38,34 @@
     </div>
 
     <script>
-        const upitnikId = window.location.pathname.split('/')[2];
+        // Izvuci ID iz URL-a - podržava različite formate
+        const pathParts = window.location.pathname.split('/').filter(p => p);
+        const upitnikId = pathParts[pathParts.length - 1] || pathParts[1];
+        
+        if (!upitnikId) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('greska').style.display = 'block';
+            document.getElementById('greskaPoruka').textContent = 'Upitnik ID nije pronađen u URL-u.';
+            throw new Error('Upitnik ID nije pronađen');
+        }
+        
+        console.log('Učitavanje upitnika sa ID:', upitnikId);
         
         // Učitavanje upitnika
         fetch(`/api/upitnici/${upitnikId}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => {
+                        throw new Error(err.error || `HTTP ${res.status}`);
+                    });
+                }
+                return res.json();
+            })
             .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                console.log('Upitnik učitán:', data);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('upitnikContainer').style.display = 'block';
                 
@@ -141,9 +163,10 @@
                 });
             })
             .catch(err => {
+                console.error('Greška pri učitavanju upitnika:', err);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('greska').style.display = 'block';
-                document.getElementById('greskaPoruka').textContent = 'Upitnik nije pronađen.';
+                document.getElementById('greskaPoruka').textContent = `Greška: ${err.message || 'Upitnik nije pronađen. Provjerite da li je link ispravan.'}`;
             });
     </script>
 </body>
