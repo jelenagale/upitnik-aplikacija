@@ -140,9 +140,16 @@ upitnik-aplikacija/
 Aplikacija može biti deploy-ana na bilo koju platformu koja podržava Node.js:
 
 - **Render.com** - Besplatno za početnike, konfigurisan kroz `render.yaml`
-- **Railway.app** - Besplatno sa ograničenjima
+- **Railway.app** - Besplatno sa ograničenjima, konfigurisan kroz `railway.json` i `nixpacks.toml`
 - **Heroku** - Konfigurisan kroz `Procfile`
 - **Bilo koja VPS** - Direktno pokretanje sa `npm start`
+
+### Deployment konfiguracije:
+
+- `render.yaml` - Konfiguracija za Render.com
+- `railway.json` - Konfiguracija za Railway.app
+- `nixpacks.toml` - Build konfiguracija za Railway (Nixpacks)
+- `Procfile` - Konfiguracija za Heroku i platforme koje koriste Procfile
 
 ### Environment varijable za produkciju:
 
