@@ -99,7 +99,19 @@
                         }
                         div.appendChild(input);
                     } else if (pitanje.tip === 'radio' || pitanje.tip === 'checkbox') {
-                        const opcije = JSON.parse(pitanje.opcije || '[]');
+                        let opcije = [];
+                        try {
+                            opcije = JSON.parse(pitanje.opcije || '[]');
+                        } catch (e) {
+                            console.error('Greška pri parsiranju opcija:', e, pitanje.opcije);
+                            // Ako nije validan JSON, pokušaj kao array string
+                            if (typeof pitanje.opcije === 'string') {
+                                opcije = pitanje.opcije.split(',').map(o => o.trim()).filter(o => o);
+                            }
+                        }
+                        if (!Array.isArray(opcije)) {
+                            opcije = [];
+                        }
                         opcije.forEach(opcija => {
                             const labelOpcija = document.createElement('label');
                             labelOpcija.className = 'option-label';

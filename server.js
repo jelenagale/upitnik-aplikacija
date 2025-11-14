@@ -182,10 +182,27 @@ app.get('/api/upitnici/:id', (req, res) => {
         return res.status(500).json({ error: err.message });
       }
 
-      const pitanjaSaOpcijama = pitanja.map(p => ({
-        ...p,
-        opcije: p.opcije ? JSON.parse(p.opcije) : null
-      }));
+      const pitanjaSaOpcijama = pitanja.map(p => {
+        let opcije = null;
+        if (p.opcije) {
+          try {
+            opcije = JSON.parse(p.opcije);
+          } catch (e) {
+            console.error('Greška pri parsiranju opcija za pitanje:', p.id, e);
+            console.error('Opcije string:', p.opcije);
+            // Pokušaj parsirati kao array string
+            try {
+              opcije = p.opcije.split(',').map(o => o.trim());
+            } catch (e2) {
+              opcije = [];
+            }
+          }
+        }
+        return {
+          ...p,
+          opcije: opcije
+        };
+      });
 
       res.json({
         ...upitnik,
@@ -269,10 +286,12 @@ app.get('/api/upitnici/:id/rezultati', (req, res) => {
             const odgovor = sesijaOdgovori.find(o => o.pitanje_id === pitanje.id);
             if (odgovor) {
               try {
+                // Pokušaj parsirati kao JSON
                 const parsed = JSON.parse(odgovor.odgovor);
-                red[pitanje.tekst] = Array.isArray(parsed) ? parsed.join(', ') : parsed;
-              } catch {
-                red[pitanje.tekst] = odgovor.odgovor;
+                red[pitanje.tekst] = Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
+              } catch (e) {
+                // Ako nije JSON, koristi direktno
+                red[pitanje.tekst] = odgovor.odgovor || '';
               }
             } else {
               red[pitanje.tekst] = '';
@@ -326,10 +345,12 @@ app.get('/api/upitnici/:id/export', (req, res) => {
               const odgovor = sesijaOdgovori.find(o => o.pitanje_id === pitanje.id);
               if (odgovor) {
                 try {
+                  // Pokušaj parsirati kao JSON
                   const parsed = JSON.parse(odgovor.odgovor);
-                  red.push(Array.isArray(parsed) ? parsed.join(', ') : parsed);
-                } catch {
-                  red.push(odgovor.odgovor);
+                  red.push(Array.isArray(parsed) ? parsed.join(', ') : String(parsed));
+                } catch (e) {
+                  // Ako nije JSON, koristi direktno
+                  red.push(odgovor.odgovor || '');
                 }
               } else {
                 red.push('');
