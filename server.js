@@ -459,34 +459,19 @@ app.get('/api/upitnici/:id/export', requireAuth, (req, res) => {
   const { id } = req.params;
   const korisnikId = req.session.userId;
 
-  // Dohvaćanje upitnika i provjera vlasništva
   db.get('SELECT * FROM upitnici WHERE id = ? AND korisnik_id = ?', [id, korisnikId], (err, upitnik) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (!upitnik) {
-      return res.status(403).json({ error: 'Nemate pristup ovom upitniku' });
-    }
+    if (err) return res.status(500).json({ error: err.message });
+    if (!upitnik) return res.status(403).json({ error: 'Nemate pristup ovom upitniku' });
 
-    // Dohvaćanje pitanja
     db.all('SELECT * FROM pitanja WHERE upitnik_id = ? ORDER BY redoslijed', [id], (err, pitanja) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+      if (err) return res.status(500).json({ error: err.message });
 
-      // Dohvaćanje sesija
       db.all('SELECT * FROM sesije WHERE upitnik_id = ? ORDER BY ispunjeno_at', [id], (err, sesije) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
+        if (err) return res.status(500).json({ error: err.message });
 
-        // Dohvaćanje odgovora
         db.all('SELECT * FROM odgovori WHERE upitnik_id = ?', [id], (err, odgovori) => {
-          if (err) {
-            return res.status(500).json({ error: err.message });
-          }
+          if (err) return res.status(500).json({ error: err.message });
 
-          // Priprema podataka za Excel
           const headers = ['Vrijeme ispunjavanja', ...pitanja.map(p => p.tekst)];
           const rows = sesije.map(sesija => {
             const sesijaOdgovori = odgovori.filter(o => o.sesija_id === sesija.id);
@@ -496,11 +481,9 @@ app.get('/api/upitnici/:id/export', requireAuth, (req, res) => {
               const odgovor = sesijaOdgovori.find(o => o.pitanje_id === pitanje.id);
               if (odgovor) {
                 try {
-                  // Pokušaj parsirati kao JSON
                   const parsed = JSON.parse(odgovor.odgovor);
                   red.push(Array.isArray(parsed) ? parsed.join(', ') : String(parsed));
                 } catch (e) {
-                  // Ako nije JSON, koristi direktno
                   red.push(odgovor.odgovor || '');
                 }
               } else {
@@ -511,21 +494,21 @@ app.get('/api/upitnici/:id/export', requireAuth, (req, res) => {
             return red;
           });
 
-          // Kreiranje Excel fajla
           const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, 'Rezultati');
 
-          // Slanje fajla
           const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
           res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
           res.setHeader('Content-Disposition', `attachment; filename="${upitnik.naslov.replace(/[^a-z0-9]/gi, '_')}_rezultati.xlsx"`);
           res.send(buffer);
-        });
-      });
-    });
-  });
-});
+
+        }); // zatvaranje odgovori callback
+      }); // zatvaranje sesije callback
+    }); // zatvaranje pitanja callback
+  }); // zatvaranje upitnik callback
+}); // zatvaranje app.get
+
 
 // Frontend rute
 app.get('/', (req, res) => {
