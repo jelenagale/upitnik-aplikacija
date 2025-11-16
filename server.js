@@ -405,54 +405,54 @@ app.get('/api/upitnici/:id/rezultati', requireAuth, (req, res) => {
 
     // Dohvaćanje pitanja
     db.all('SELECT * FROM pitanja WHERE upitnik_id = ? ORDER BY redoslijed', [id], (err, pitanja) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    // Dohvaćanje svih sesija
-    db.all('SELECT * FROM sesije WHERE upitnik_id = ? ORDER BY ispunjeno_at', [id], (err, sesije) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
 
-      // Dohvaćanje odgovora
-      db.all('SELECT * FROM odgovori WHERE upitnik_id = ?', [id], (err, odgovori) => {
+      // Dohvaćanje svih sesija
+      db.all('SELECT * FROM sesije WHERE upitnik_id = ? ORDER BY ispunjeno_at', [id], (err, sesije) => {
         if (err) {
           return res.status(500).json({ error: err.message });
         }
 
-        // Organizacija podataka
-        const rezultati = sesije.map(sesija => {
-          const sesijaOdgovori = odgovori.filter(o => o.sesija_id === sesija.id);
+        // Dohvaćanje odgovora
+        db.all('SELECT * FROM odgovori WHERE upitnik_id = ?', [id], (err, odgovori) => {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
 
-          const red = {
-            'Vrijeme ispunjavanja': new Date(sesija.ispunjeno_at).toLocaleString('hr-HR')
-          };
+          // Organizacija podataka
+          const rezultati = sesije.map(sesija => {
+            const sesijaOdgovori = odgovori.filter(o => o.sesija_id === sesija.id);
 
-          pitanja.forEach(pitanje => {
-            const odgovor = sesijaOdgovori.find(o => o.pitanje_id === pitanje.id);
-            if (odgovor) {
-              try {
-                // Pokušaj parsirati kao JSON
-                const parsed = JSON.parse(odgovor.odgovor);
-                red[pitanje.tekst] = Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
-              } catch (e) {
-                // Ako nije JSON, koristi direktno
-                red[pitanje.tekst] = odgovor.odgovor || '';
+            const red = {
+              'Vrijeme ispunjavanja': new Date(sesija.ispunjeno_at).toLocaleString('hr-HR')
+            };
+
+            pitanja.forEach(pitanje => {
+              const odgovor = sesijaOdgovori.find(o => o.pitanje_id === pitanje.id);
+              if (odgovor) {
+                try {
+                  const parsed = JSON.parse(odgovor.odgovor);
+                  red[pitanje.tekst] = Array.isArray(parsed) ? parsed.join(', ') : String(parsed);
+                } catch (e) {
+                  red[pitanje.tekst] = odgovor.odgovor || '';
+                }
+              } else {
+                red[pitanje.tekst] = '';
               }
-            } else {
-              red[pitanje.tekst] = '';
-            }
+            });
+
+            return red;
           });
 
-          return red;
-        });
+          res.json({ pitanja, rezultati });
+        }); // zatvaranje db.all odgovori
+      }); // zatvaranje db.all sesije
+    }); // zatvaranje db.all pitanja
+  }); // zatvaranje db.get upitnik
+}); // zatvaranje app.get
 
-        res.json({ pitanja, rezultati });
-      });
-    });
-  });
-});
 
 // Export u Excel (samo vlasnik)
 app.get('/api/upitnici/:id/export', requireAuth, (req, res) => {
