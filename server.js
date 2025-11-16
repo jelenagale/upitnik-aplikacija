@@ -8,7 +8,7 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0'; // Sluša na svim mrežnim interfejsima
 
 // Session middleware
